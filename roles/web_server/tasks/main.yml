@@ -1,0 +1,111 @@
+- name: Install, postgreSQL, httpd, nginx, nodejs
+  tags: server_app
+  dnf:
+   name: "{{ item }}"
+   state: present
+  with_items:
+      - httpd
+      - postgresql
+      - postgresql-server
+      - nginx
+      - php
+      - php-pgsql
+      - nodejs
+      - npm
+  
+
+- name: create a directory for the nodejs application
+  tags: dir_creation
+  file:
+      path: /home/alma/my_app
+      state: directory
+      owner: alma
+      group: alma
+      mode: '0744'
+
+- name: Copy server.js dest machine
+  tags: js
+  copy:
+    src: /home/arch06/Ansible_portfolio/file/server.js
+    dest:  /home/alma/my_app
+    owner: alma
+    group: alma
+    mode: 0644
+
+
+- name: Install nodejs dependencies
+  tags: nodejs
+  npm:
+    path: /home/alma/my_app
+    state: present
+
+- name: Start node.js
+  shell:
+    cmd: "nohup node server.js > start_node.log 2>&1 & echo $! > node.pid"
+    chdir: /home/alma/my_app
+  args:
+    executable: /bin/bash
+
+- name: Start httpd and enable httpd
+  tags:  start_httpd
+  systemd:
+      name: httpd
+      state: started
+      enabled: yes
+  notify: restart_httpd
+
+- name: Start postgresql-server
+  tags: postgresql-start
+  systemd:
+      name: postgresql.service
+      state: started
+      enabled: yes
+  notify: restart_postgresql
+
+
+
+- name: Create a sytem user for httpd 
+  tags: user
+  user:
+    name: "{{ user_owner }}"
+    comment: "{{user_comment}}"
+    state: present
+    system: yes
+    create_home: no
+    shell: /bin/false
+
+- name: crete a sub dir for html file 
+  file:
+    path: /home/alma/my_app/public
+    state: directory
+
+
+- name: copy a default hmtl file
+  tags: apache_curl
+  copy:
+    src: /home/arch06/Ansible_portfolio/file/default_site.html
+    dest: /home/alma/my_app/public/index.html
+    owner: "{{ user_owner }}"
+    group: "{{ group }}"
+    mode: 0644
+  notify: restart_httpd
+
+- name: Expose https using firewalld
+  tags: firewalld
+  ansible.posix.firewalld:
+    service: https  
+    state: enabled
+    permanent: true
+    immediate: true
+    offline: true
+  notify: reload_firewalld
+
+- name: Expose port 5432 for node.js using firewalld
+  tags: firewalld
+  ansible.posix.firewalld:
+    service: postgresql
+    state: enabled
+    permanent: true
+    immediate: true
+    offline: true
+  notify: reload_firewalld

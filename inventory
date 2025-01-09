@@ -1,0 +1,3 @@
+
+[web_server]
+10.0.0.253 ansible_user=alma

@@ -1,0 +1,6 @@
+apache_package_name: apache2
+apache_service: apache2
+user_comment: httpd_Manager
+user_owner: httpd_user
+group: httpd_user
+

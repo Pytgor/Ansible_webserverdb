@@ -1,0 +1,20 @@
+- name: restart_httpd
+  service:
+      name: httpd
+      state: restarted
+
+- name: restart_postgresql
+  service:
+    name: mysql
+    state: restarted
+
+- name: restart_nginx
+  service:
+    name: nginx
+    state: restarted
+
+- name: reload_firewalld
+  service:
+    name: firewalld
+    state: restarted
+
